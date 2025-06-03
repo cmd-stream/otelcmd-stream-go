@@ -1,4 +1,4 @@
-package otelcs
+package otelcmd
 
 import (
 	"context"

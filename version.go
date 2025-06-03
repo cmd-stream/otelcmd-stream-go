@@ -1,4 +1,4 @@
-package otelcs
+package otelcmd
 
 // Version is the current release version of the otelcmd-stream instrumentation.
 func Version() string {
