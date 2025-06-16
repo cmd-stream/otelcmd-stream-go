@@ -5,3 +5,6 @@
 [![codecov](https://codecov.io/gh/cmd-stream/otelcmd-stream-go/graph/badge.svg?token=04UEO65CLJ)](https://codecov.io/gh/cmd-stream/otelcmd-stream-go)
 
 otelcmd-stream-go provides OpenTelemetry support for [cmd-stream-go](https://github.com/cmd-stream/cmd-stream-go).
+
+# How To
+[cmd-stream-go with OpenTelemetry](https://ymz-ncnk.medium.com/cmd-stream-go-with-opentelemetry-adeecfbe7987)
