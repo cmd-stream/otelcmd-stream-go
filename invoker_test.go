@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/cmd-stream/core-go"
-	bmock "github.com/cmd-stream/core-go/testdata/mock"
-	hmock "github.com/cmd-stream/handler-go/testdata/mock"
 	internal_semconv "github.com/cmd-stream/otelcmd-stream-go/internal/semconv"
 	"github.com/cmd-stream/otelcmd-stream-go/semconv"
 	"github.com/cmd-stream/otelcmd-stream-go/testdata/mock"
 	"github.com/cmd-stream/sender-go/hooks"
+	cmocks "github.com/cmd-stream/testkit-go/mocks/core"
+	hmocks "github.com/cmd-stream/testkit-go/mocks/handler"
 	asserterror "github.com/ymz-ncnk/assert/error"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -43,7 +43,6 @@ type metricVars struct {
 }
 
 func TestInvoker(t *testing.T) {
-
 	t.Run("Should work with TraceCmd", func(t *testing.T) {
 		otel.SetTracerProvider(tracenop.NewTracerProvider())
 		otel.SetMeterProvider(noop.NewMeterProvider())
@@ -60,10 +59,11 @@ func TestInvoker(t *testing.T) {
 				propagation.TraceContext{},
 				propagation.Baggage{},
 			)
-			result = bmock.NewResult()
-			cmd    = bmock.NewCmd().RegisterExec(
+			result = cmocks.NewResult()
+			cmd    = cmocks.NewCmd().RegisterExec(
 				func(ctx context.Context, seq core.Seq, at time.Time, receiver any,
-					proxy core.Proxy) (err error) {
+					proxy core.Proxy,
+				) (err error) {
 					_, err = proxy.Send(0, result)
 					return
 				},
@@ -99,10 +99,11 @@ func TestInvoker(t *testing.T) {
 				propagation.TraceContext{},
 				propagation.Baggage{},
 			)
-			result = bmock.NewResult()
-			cmd    = bmock.NewCmd().RegisterExec(
+			result = cmocks.NewResult()
+			cmd    = cmocks.NewCmd().RegisterExec(
 				func(ctx context.Context, seq core.Seq, at time.Time, receiver any,
-					proxy core.Proxy) (err error) {
+					proxy core.Proxy,
+				) (err error) {
 					_, err = proxy.Send(0, result)
 					return
 				},
@@ -136,10 +137,11 @@ func TestInvoker(t *testing.T) {
 				)
 				meterProvider  = mock.NewMeterProvider()
 				tracerProvider = mock.NewTracerProvider()
-				result         = bmock.NewResult()
-				cmd            = bmock.NewCmd().RegisterExec(
+				result         = cmocks.NewResult()
+				cmd            = cmocks.NewCmd().RegisterExec(
 					func(ctx context.Context, seq core.Seq, at time.Time, receiver any,
-						proxy core.Proxy) (err error) {
+						proxy core.Proxy,
+					) (err error) {
 						_, err = proxy.Send(0, result)
 						return
 					},
@@ -175,10 +177,11 @@ func TestInvoker(t *testing.T) {
 					propagation.TraceContext{},
 					propagation.Baggage{},
 				)
-				result = bmock.NewResult()
-				cmd    = bmock.NewCmd().RegisterExec(
+				result = cmocks.NewResult()
+				cmd    = cmocks.NewCmd().RegisterExec(
 					func(ctx context.Context, seq core.Seq, at time.Time, receiver any,
-						proxy core.Proxy) (err error) {
+						proxy core.Proxy,
+					) (err error) {
 						_, err = proxy.Send(0, result)
 						return
 					},
@@ -257,7 +260,6 @@ func TestInvoker(t *testing.T) {
 			)
 			testInvoke(want, meterProvider, tracerProvider, cmd, result, ops, t)
 		})
-
 }
 
 func testInvoke(want wantVals,
@@ -277,17 +279,16 @@ func testInvoke(want wantVals,
 	// cmd and result are received as parameters.
 
 	// 2. Start span.
-	var (
-		ctxWithSpan, span = mockTracerProviderForTraceCmd(tracerProvider, want.spanName,
-			want.spanStartConfig, t)
-	)
+
+	ctxWithSpan, span := mockTracerProviderForTraceCmd(tracerProvider, want.spanName,
+		want.spanStartConfig, t)
 
 	// 3. Set span attributes.
 	mockSpanAttributes(span, want.addr, want.spanAttrs, t)
 
 	// 4. Invoke cmd with wrapped Proxy.
 	var (
-		invoker = hmock.NewInvoker[any]()
+		invoker = hmocks.NewInvoker[any]()
 		proxy   = mockInvoker(invoker, want.addr, cmd, t)
 	)
 
@@ -306,7 +307,8 @@ func testInvoke(want wantVals,
 }
 
 func mockServerMeterProvider(meterProvider mock.MeterProvider, t *testing.T) (
-	vars metricVars) {
+	vars metricVars,
+) {
 	vars, fn1, fn2, fn3, fn4, fn5, fn6 := meterFns(t)
 	meter := mock.NewMeter().RegisterInt64Counter(fn1).
 		RegisterInt64Histogram(fn2).
@@ -324,7 +326,8 @@ func mockServerMeterProvider(meterProvider mock.MeterProvider, t *testing.T) (
 }
 
 func mockTracerProviderForTraceCmd(tracerProvider mock.TracerProvider, wantSpanName string,
-	wantSpanStartConfig trace.SpanConfig, t *testing.T) (spanCtx context.Context, span mock.Span) {
+	wantSpanStartConfig trace.SpanConfig, t *testing.T,
+) (spanCtx context.Context, span mock.Span) {
 	span = mock.NewSpan().RegisterSpanContext(
 		func() trace.SpanContext {
 			return spanContextFromTraceparent(Traceparent)
@@ -336,7 +339,8 @@ func mockTracerProviderForTraceCmd(tracerProvider mock.TracerProvider, wantSpanN
 }
 
 func mockTracerProviderForRegularCmd(tracerProvider mock.TracerProvider, wantSpanName string,
-	wantSpanStartConfig trace.SpanConfig, t *testing.T) (spanCtx context.Context, span mock.Span) {
+	wantSpanStartConfig trace.SpanConfig, t *testing.T,
+) (spanCtx context.Context, span mock.Span) {
 	span = mock.NewSpan()
 	spanCtx = mockTracerProvider(tracerProvider, wantSpanName, wantSpanStartConfig,
 		span, t)
@@ -344,11 +348,13 @@ func mockTracerProviderForRegularCmd(tracerProvider mock.TracerProvider, wantSpa
 }
 
 func mockTracerProvider(tracerProvider mock.TracerProvider, wantSpanName string,
-	wantSpanStartConfig trace.SpanConfig, span mock.Span, t *testing.T) (spanCtx context.Context) {
+	wantSpanStartConfig trace.SpanConfig, span mock.Span, t *testing.T,
+) (spanCtx context.Context) {
 	spanCtx = trace.ContextWithSpan(context.Background(), span)
 	tracer := mock.NewTracer().RegisterStart(
 		func(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (
-			context.Context, trace.Span) {
+			context.Context, trace.Span,
+		) {
 			// TODO check ctx, contains traceparent
 			asserterror.Equal(spanName, wantSpanName, t)
 
@@ -373,7 +379,8 @@ func mockTracerProvider(tracerProvider mock.TracerProvider, wantSpanName string,
 }
 
 func mockSpanAttributes(span mock.Span, wantAddr *net.TCPAddr,
-	wantSpanAttrs []attribute.KeyValue, t *testing.T) {
+	wantSpanAttrs []attribute.KeyValue, t *testing.T,
+) {
 	span.RegisterSetAttributes(
 		func(attrs ...attribute.KeyValue) {
 			asserterror.EqualDeep(attrs, wantSpanAttrs, t)
@@ -381,9 +388,10 @@ func mockSpanAttributes(span mock.Span, wantAddr *net.TCPAddr,
 	)
 }
 
-func mockInvoker(invoker hmock.Invoker[any], wantAddr *net.TCPAddr,
-	wantCmd core.Cmd[any], t *testing.T) (proxy bmock.Proxy) {
-	proxy = bmock.NewProxy().RegisterRemoteAddr(
+func mockInvoker(invoker hmocks.Invoker[any], wantAddr *net.TCPAddr,
+	wantCmd core.Cmd[any], t *testing.T,
+) (proxy cmocks.Proxy) {
+	proxy = cmocks.NewProxy().RegisterRemoteAddr(
 		func() (addr net.Addr) { return wantAddr },
 	)
 	proxy.RegisterSend(
@@ -393,7 +401,8 @@ func mockInvoker(invoker hmock.Invoker[any], wantAddr *net.TCPAddr,
 	)
 	invoker.RegisterInvoke(
 		func(ctx context.Context, seq core.Seq, at time.Time, bytesRead int,
-			cmd core.Cmd[any], proxy core.Proxy) (err error) {
+			cmd core.Cmd[any], proxy core.Proxy,
+		) (err error) {
 			asserterror.Equal(cmd, wantCmd, t)
 			return cmd.Exec(ctx, seq, at, struct{}{}, proxy)
 		},
@@ -402,7 +411,8 @@ func mockInvoker(invoker hmock.Invoker[any], wantAddr *net.TCPAddr,
 }
 
 func mockSpanEvent(span mock.Span, result core.Result, wantConfig trace.EventConfig,
-	t *testing.T) {
+	t *testing.T,
+) {
 	span.RegisterAddEvent(
 		func(name string, options ...trace.EventOption) {
 			asserterror.Equal(name, internal_semconv.ResultEventName, t)
@@ -413,13 +423,15 @@ func mockSpanEvent(span mock.Span, result core.Result, wantConfig trace.EventCon
 }
 
 func mockMetricVars(ctxWithSpan context.Context, vars metricVars, want wantVals,
-	t *testing.T) {
+	t *testing.T,
+) {
 	mockResultMetricVars(ctxWithSpan, vars, want, t)
 	mockCmdMetricVars(ctxWithSpan, vars, want, t)
 }
 
 func mockResultMetricVars(ctxWithSpan context.Context, vars metricVars,
-	want wantVals, t *testing.T) {
+	want wantVals, t *testing.T,
+) {
 	rfn1, rfn2, rfn3 := resultMetricFns(ctxWithSpan, 1, ResultSize, want, t)
 	vars.resultInt64Counter.RegisterAdd(rfn1)
 	vars.resultInt64Histogram.RegisterRecord(rfn2)
@@ -427,7 +439,8 @@ func mockResultMetricVars(ctxWithSpan context.Context, vars metricVars,
 }
 
 func mockCmdMetricVars(ctxWithSpan context.Context, vars metricVars,
-	want wantVals, t *testing.T) {
+	want wantVals, t *testing.T,
+) {
 	cfn1, cfn2, cfn3 := commandMetricFns(ctxWithSpan, 1, CmdSize, want, t)
 	vars.cmdInt64Counter.RegisterAdd(cfn1)
 	vars.cmdInt64Histogram.RegisterRecord(cfn2)
@@ -589,7 +602,8 @@ func newWantVals(addr *net.TCPAddr, spanName string, cmd core.Cmd[any],
 ) wantVals {
 	var (
 		spanStartOptions = append([]trace.SpanStartOption{
-			trace.WithSpanKind(trace.SpanKindServer)}, addSpanStartOptions...)
+			trace.WithSpanKind(trace.SpanKindServer),
+		}, addSpanStartOptions...)
 		spanAttrs = append(addSpanAttrs, []attribute.KeyValue{
 			otel_semconv.NetworkPeerAddress(addr.IP.String()),
 			otel_semconv.NetworkPeerPort(addr.Port),
