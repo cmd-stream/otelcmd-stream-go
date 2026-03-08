@@ -8,21 +8,20 @@ require (
 )
 
 require (
-	github.com/cmd-stream/delegate-go v0.0.0-20251102020741-164e6005aadf // indirect
+	github.com/cmd-stream/delegate-go v0.0.0-20260308140853-81d810b4c662 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/mus-format/common-go v0.0.0-20251026152644-9f5ac6728d8a // indirect
-	github.com/mus-format/mus-stream-go v0.7.2 // indirect
+	github.com/mus-format/common-go v0.0.0-20260225152706-590b1bf7cb37 // indirect
+	github.com/mus-format/mus-stream-go v0.8.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
 )
 
 require (
-	github.com/cmd-stream/core-go v0.0.0-20251102020427-f23e62426486
-	github.com/cmd-stream/handler-go v0.0.0-20251102020950-33189f2d8d28
-	github.com/cmd-stream/sender-go v0.0.0-20251102050957-6655c15cfddf
-	github.com/cmd-stream/testkit-go v0.0.0-20251102015907-0ae91640601a
-	github.com/ymz-ncnk/assert v0.0.0-20250528151733-c41b2fca7933
-	github.com/ymz-ncnk/mok v0.2.1
+	github.com/cmd-stream/core-go v0.0.0-20260308140214-8371a5716599
+	github.com/cmd-stream/handler-go v0.0.0-20260308162944-3e190d687853
+	github.com/cmd-stream/sender-go v0.0.0-20260308193800-49a78cc4f245
+	github.com/ymz-ncnk/assert v0.0.0-20260108210721-155bc9aa4282
+	github.com/ymz-ncnk/mok v0.2.2
 	go.opentelemetry.io/otel v1.35.0
 )

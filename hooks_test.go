@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/cmd-stream/core-go"
+	cmock "github.com/cmd-stream/core-go/test/mock"
 	internal_semconv "github.com/cmd-stream/otelcmd-stream-go/internal/semconv"
 	semconv "github.com/cmd-stream/otelcmd-stream-go/semconv"
-	"github.com/cmd-stream/otelcmd-stream-go/testdata/mock"
+	"github.com/cmd-stream/otelcmd-stream-go/test/mock"
 	"github.com/cmd-stream/sender-go/hooks"
-	cmocks "github.com/cmd-stream/testkit-go/mocks/core"
 	asserterror "github.com/ymz-ncnk/assert/error"
 	"github.com/ymz-ncnk/mok"
 	"go.opentelemetry.io/otel"
@@ -35,7 +35,7 @@ func TestSendHooks(t *testing.T) {
 
 			var (
 				wantErr  error = nil
-				cmd            = cmocks.NewCmd()
+				cmd            = cmock.NewCmd()
 				traceCmd       = NewTraceCmd(cmd)
 
 				spanStartOptions = []trace.SpanStartOption{
@@ -61,14 +61,16 @@ func TestSendHooks(t *testing.T) {
 
 			hooks := NewHooksFactory[any]().New()
 			_, err := hooks.BeforeSend(context.Background(), traceCmd)
-			asserterror.EqualError(err, wantErr, t)
+			asserterror.EqualError(t, err, wantErr)
 
-			asserterror.EqualDeep(hooks.(*Hooks[any]).span, span, t)
-			asserterror.EqualDeep(traceCmd.Carrier(),
-				map[string]string{"traceparent": Traceparent}, t)
+			asserterror.EqualDeep(t, hooks.(*Hooks[any]).span, span)
+			asserterror.EqualDeep(
+				t, traceCmd.Carrier(),
+				map[string]string{"traceparent": Traceparent})
+
 			// TODO hooks.(*SendHooks[any]).sendTime
 
-			asserterror.EqualDeep(mok.CheckCalls(mocks), mok.EmptyInfomap, t)
+			asserterror.EqualDeep(t, mok.CheckCalls(mocks), mok.EmptyInfomap)
 		})
 
 		t.Run("Should work with a regular Cmd", func(t *testing.T) {
@@ -78,7 +80,7 @@ func TestSendHooks(t *testing.T) {
 
 			var (
 				wantErr          error = nil
-				cmd                    = cmocks.NewCmd()
+				cmd                    = cmock.NewCmd()
 				spanStartOptions       = []trace.SpanStartOption{
 					trace.WithSpanKind(trace.SpanKindClient),
 				}
@@ -96,11 +98,11 @@ func TestSendHooks(t *testing.T) {
 
 			hooks := NewHooksFactory[any]().New()
 			_, err := hooks.BeforeSend(context.Background(), cmd)
-			asserterror.EqualError(err, wantErr, t)
+			asserterror.EqualError(t, err, wantErr)
 
-			asserterror.EqualDeep(hooks.(*Hooks[any]).span, span, t)
+			asserterror.EqualDeep(t, hooks.(*Hooks[any]).span, span)
 
-			asserterror.EqualDeep(mok.CheckCalls(mocks), mok.EmptyInfomap, t)
+			asserterror.EqualDeep(t, mok.CheckCalls(mocks), mok.EmptyInfomap)
 		})
 
 		t.Run("We should be able to set TracerProvider and Propagator with options",
@@ -111,7 +113,7 @@ func TestSendHooks(t *testing.T) {
 
 				var (
 					wantErr          error = nil
-					cmd                    = cmocks.NewCmd()
+					cmd                    = cmock.NewCmd()
 					traceCmd               = NewTraceCmd(cmd)
 					spanStartOptions       = []trace.SpanStartOption{
 						trace.WithSpanKind(trace.SpanKindClient),
@@ -138,9 +140,9 @@ func TestSendHooks(t *testing.T) {
 
 				hooks := NewHooksFactory[any](ops...).New()
 				_, err := hooks.BeforeSend(context.Background(), traceCmd)
-				asserterror.EqualError(err, wantErr, t)
+				asserterror.EqualError(t, err, wantErr)
 
-				asserterror.EqualDeep(mok.CheckCalls(mocks), mok.EmptyInfomap, t)
+				asserterror.EqualDeep(t, mok.CheckCalls(mocks), mok.EmptyInfomap)
 			})
 
 		t.Run("Should get a TracerProvider from the context", func(t *testing.T) {
@@ -150,7 +152,7 @@ func TestSendHooks(t *testing.T) {
 
 			var (
 				wantErr error = nil
-				cmd           = cmocks.NewCmd()
+				cmd           = cmock.NewCmd()
 				// 00-8e4e4fc7a0b349d2b2039ab9c1e2a5f7-5d3f9a81cd8731be-01
 				sc = trace.NewSpanContext(trace.SpanContextConfig{
 					TraceID:    [16]byte([]byte("8e4e4fc7a0b349d2b2039ab9c1e2a5f7")),
@@ -165,9 +167,9 @@ func TestSendHooks(t *testing.T) {
 
 			hooks := NewHooksFactory[any]().New()
 			_, err := hooks.BeforeSend(ctx, cmd)
-			asserterror.EqualError(err, wantErr, t)
+			asserterror.EqualError(t, err, wantErr)
 
-			asserterror.EqualDeep(mok.CheckCalls(mocks), mok.EmptyInfomap, t)
+			asserterror.EqualDeep(t, mok.CheckCalls(mocks), mok.EmptyInfomap)
 		})
 	})
 
@@ -198,13 +200,13 @@ func TestSendHooks(t *testing.T) {
 
 				meterProvider = mock.NewMeterProvider()
 
-				cmd     = cmocks.NewCmd()
+				cmd     = cmock.NewCmd()
 				sentCmd = hooks.SentCmd[any]{
 					Seq:  CmdSeq,
 					Size: CmdSize,
 					Cmd:  cmd,
 				}
-				result = cmocks.NewResult().RegisterLastOne(
+				result = cmock.NewResult().RegisterLastOne(
 					func() (lastOne bool) { return true },
 				)
 				recvResult = hooks.ReceivedResult{
@@ -227,7 +229,7 @@ func TestSendHooks(t *testing.T) {
 						wantAttrs = append(wantAttrs, semconv.CmdStreamCommandSeqKey.Int64(int64(sentCmd.Seq)))
 						wantAttrs = append(wantAttrs, semconv.CmdStreamCommandSizeKey.Int64(int64(sentCmd.Size)))
 
-						asserterror.EqualDeep(attrs, wantAttrs, t)
+						asserterror.EqualDeep(t, attrs, wantAttrs)
 					},
 				).RegisterEnd(
 					func(options ...trace.SpanEndOption) {},
@@ -253,13 +255,13 @@ func TestSendHooks(t *testing.T) {
 					Port: 8080,
 				}
 
-				cmd     = cmocks.NewCmd()
+				cmd     = cmock.NewCmd()
 				sentCmd = hooks.SentCmd[any]{
 					Seq:  CmdSeq,
 					Size: CmdSize,
 					Cmd:  cmd,
 				}
-				result = cmocks.NewResult().RegisterLastOne(
+				result = cmock.NewResult().RegisterLastOne(
 					func() (lastOne bool) { return false },
 				)
 				recvResult = hooks.ReceivedResult{
@@ -282,7 +284,7 @@ func TestSendHooks(t *testing.T) {
 						wantAttrs = append(wantAttrs, semconv.CmdStreamCommandSeqKey.Int64(int64(sentCmd.Seq)))
 						wantAttrs = append(wantAttrs, semconv.CmdStreamCommandSizeKey.Int64(int64(sentCmd.Size)))
 
-						asserterror.EqualDeep(attrs, wantAttrs, t)
+						asserterror.EqualDeep(t, attrs, wantAttrs)
 					},
 				)
 				ctxWithSpan   = trace.ContextWithSpan(context.Background(), span)
@@ -307,7 +309,7 @@ func TestSendHooks(t *testing.T) {
 					Port: 8080,
 				}
 
-				cmd     = cmocks.NewCmd()
+				cmd     = cmock.NewCmd()
 				sentCmd = hooks.SentCmd[any]{
 					Seq:  CmdSeq,
 					Size: CmdSize,
@@ -315,7 +317,7 @@ func TestSendHooks(t *testing.T) {
 				}
 				err          = errors.New("test error")
 				wantSpanName = "Invoke " + internal_semconv.TypeStr(cmd)
-				want         = newWantVals(wantAddr, wantSpanName, cmd, cmocks.NewResult(),
+				want         = newWantVals(wantAddr, wantSpanName, cmd, cmock.NewResult(),
 					semconv.Failed, nil, nil, nil, nil, nil, false)
 
 				ops = []SetOption[any]{
@@ -327,7 +329,7 @@ func TestSendHooks(t *testing.T) {
 				span          = mock.NewSpan().RegisterSetAttributes(
 					func(attrs ...attribute.KeyValue) {
 						wantAttrs := []attribute.KeyValue{otel_semconv.ErrorTypeKey.String(internal_semconv.TypeStr(err))}
-						asserterror.EqualDeep(attrs, wantAttrs, t)
+						asserterror.EqualDeep(t, attrs, wantAttrs)
 					},
 				).RegisterSetAttributes(
 					func(attrs ...attribute.KeyValue) {
@@ -336,12 +338,12 @@ func TestSendHooks(t *testing.T) {
 						wantAttrs = append(wantAttrs, semconv.CmdStreamCommandSeqKey.Int64(int64(sentCmd.Seq)))
 						wantAttrs = append(wantAttrs, semconv.CmdStreamCommandSizeKey.Int64(int64(sentCmd.Size)))
 
-						asserterror.EqualDeep(attrs, wantAttrs, t)
+						asserterror.EqualDeep(t, attrs, wantAttrs)
 					},
 				).RegisterSetStatus(
 					func(code codes.Code, description string) {
-						asserterror.Equal(code, codes.Error, t)
-						asserterror.Equal(description, err.Error(), t)
+						asserterror.Equal(t, code, codes.Error)
+						asserterror.Equal(t, description, err.Error())
 					},
 				).RegisterEnd(
 					func(options ...trace.SpanEndOption) {},
@@ -366,13 +368,13 @@ func TestSendHooks(t *testing.T) {
 					Port: 8080,
 				}
 
-				cmd     = cmocks.NewCmd()
+				cmd     = cmock.NewCmd()
 				sentCmd = hooks.SentCmd[any]{
 					Seq:  CmdSeq,
 					Size: CmdSize,
 					Cmd:  cmd,
 				}
-				result = cmocks.NewResult().RegisterLastOne(
+				result = cmock.NewResult().RegisterLastOne(
 					func() (lastOne bool) { return true },
 				)
 				recvResult = hooks.ReceivedResult{
@@ -394,7 +396,7 @@ func TestSendHooks(t *testing.T) {
 				addResultMetricAttrs = []attribute.KeyValue{
 					{Key: "resultmetric", Value: attribute.StringValue("resultmetric_value")},
 				}
-				want = newWantVals(wantAddr, wantSpanName, cmd, cmocks.NewResult(),
+				want = newWantVals(wantAddr, wantSpanName, cmd, cmock.NewResult(),
 					semconv.Ok,
 					[]trace.SpanStartOption{trace.WithTimestamp(wantTimestamp)},
 					addSpanAttrs,
@@ -409,42 +411,42 @@ func TestSendHooks(t *testing.T) {
 					WithSpanStartOption[any](trace.WithTimestamp(wantTimestamp)),
 					WithSpanAttributesFn(
 						func(remoteAddr net.Addr, sentCmd hooks.SentCmd[any]) []attribute.KeyValue {
-							asserterror.Equal(remoteAddr, net.Addr(wantAddr), t)
-							asserterror.Equal(sentCmd.Seq, CmdSeq, t)
-							asserterror.Equal(sentCmd.Size, CmdSize, t)
-							asserterror.Equal(sentCmd.Cmd, core.Cmd[any](cmd), t)
+							asserterror.Equal(t, remoteAddr, net.Addr(wantAddr))
+							asserterror.Equal(t, sentCmd.Seq, CmdSeq)
+							asserterror.Equal(t, sentCmd.Size, CmdSize)
+							asserterror.Equal(t, sentCmd.Cmd, core.Cmd[any](cmd))
 							return addSpanAttrs
 						},
 					),
 					WithSpanResultEventAttributesFn(
 						func(sentCmd hooks.SentCmd[any], recvResult hooks.ReceivedResult) []attribute.KeyValue {
-							asserterror.Equal(sentCmd.Seq, CmdSeq, t)
-							asserterror.Equal(sentCmd.Size, CmdSize, t)
-							asserterror.Equal(sentCmd.Cmd, core.Cmd[any](cmd), t)
-							asserterror.Equal(recvResult.Seq, ResultSeq, t)
-							asserterror.Equal(recvResult.Size, ResultSize, t)
-							asserterror.Equal(recvResult.Result, core.Result(result), t)
+							asserterror.Equal(t, sentCmd.Seq, CmdSeq)
+							asserterror.Equal(t, sentCmd.Size, CmdSize)
+							asserterror.Equal(t, sentCmd.Cmd, core.Cmd[any](cmd))
+							asserterror.Equal(t, recvResult.Seq, ResultSeq)
+							asserterror.Equal(t, recvResult.Size, ResultSize)
+							asserterror.Equal(t, recvResult.Result, core.Result(result))
 							return addResultEventAttrs
 						},
 					),
 					WithCmdMetricAttributesFn(
 						func(sentCmd hooks.SentCmd[any], status semconv.CmdStreamCommandStatus, elapsedTime float64) []attribute.KeyValue {
-							asserterror.Equal(sentCmd.Seq, CmdSeq, t)
-							asserterror.Equal(sentCmd.Size, CmdSize, t)
-							asserterror.Equal(sentCmd.Cmd, core.Cmd[any](cmd), t)
-							asserterror.Equal(status, semconv.Ok, t)
+							asserterror.Equal(t, sentCmd.Seq, CmdSeq)
+							asserterror.Equal(t, sentCmd.Size, CmdSize)
+							asserterror.Equal(t, sentCmd.Cmd, core.Cmd[any](cmd))
+							asserterror.Equal(t, status, semconv.Ok)
 							// asserterror.Equal(elapsedTime, wantElapsedTime, t)
 							return addCmdMetricAttrs
 						},
 					),
 					WithResultMetricAttributesFn(
 						func(sentCmd hooks.SentCmd[any], recvResult hooks.ReceivedResult, elapsedTime float64) []attribute.KeyValue {
-							asserterror.Equal(sentCmd.Seq, CmdSeq, t)
-							asserterror.Equal(sentCmd.Size, CmdSize, t)
-							asserterror.Equal(sentCmd.Cmd, core.Cmd[any](cmd), t)
-							asserterror.Equal(recvResult.Seq, ResultSeq, t)
-							asserterror.Equal(recvResult.Size, ResultSize, t)
-							asserterror.Equal(recvResult.Result, core.Result(result), t)
+							asserterror.Equal(t, sentCmd.Seq, CmdSeq)
+							asserterror.Equal(t, sentCmd.Size, CmdSize)
+							asserterror.Equal(t, sentCmd.Cmd, core.Cmd[any](cmd))
+							asserterror.Equal(t, recvResult.Seq, ResultSeq)
+							asserterror.Equal(t, recvResult.Size, ResultSize)
+							asserterror.Equal(t, recvResult.Result, core.Result(result))
 							// asserterror.Equal(elapsedTime, wantElapsedTime, t)
 							return addResultMetricAttrs
 						},
@@ -460,7 +462,7 @@ func TestSendHooks(t *testing.T) {
 						wantAttrs = append(wantAttrs, semconv.CmdStreamCommandSeqKey.Int64(int64(sentCmd.Seq)))
 						wantAttrs = append(wantAttrs, semconv.CmdStreamCommandSizeKey.Int64(int64(sentCmd.Size)))
 
-						asserterror.EqualDeep(attrs, wantAttrs, t)
+						asserterror.EqualDeep(t, attrs, wantAttrs)
 					},
 				).RegisterEnd(
 					func(options ...trace.SpanEndOption) {},
@@ -488,7 +490,7 @@ func TestSendHooks(t *testing.T) {
 					Port: 8080,
 				}
 
-				cmd     = cmocks.NewCmd()
+				cmd     = cmock.NewCmd()
 				sentCmd = hooks.SentCmd[any]{
 					Seq:  CmdSeq,
 					Size: CmdSize,
@@ -496,7 +498,7 @@ func TestSendHooks(t *testing.T) {
 				}
 				err          = errors.New("test error")
 				wantSpanName = "Invoke " + internal_semconv.TypeStr(cmd)
-				want         = newWantVals(wantAddr, wantSpanName, cmd, cmocks.NewResult(),
+				want         = newWantVals(wantAddr, wantSpanName, cmd, cmock.NewResult(),
 					semconv.Timeout, nil, nil, nil, nil, nil, false)
 
 				ops = []SetOption[any]{
@@ -508,7 +510,7 @@ func TestSendHooks(t *testing.T) {
 				span          = mock.NewSpan().RegisterSetAttributes(
 					func(attrs ...attribute.KeyValue) {
 						wantAttrs := []attribute.KeyValue{otel_semconv.ErrorTypeKey.String(internal_semconv.TypeStr(err))}
-						asserterror.EqualDeep(attrs, wantAttrs, t)
+						asserterror.EqualDeep(t, attrs, wantAttrs)
 					},
 				).RegisterSetAttributes(
 					func(attrs ...attribute.KeyValue) {
@@ -517,12 +519,12 @@ func TestSendHooks(t *testing.T) {
 						wantAttrs = append(wantAttrs, semconv.CmdStreamCommandSeqKey.Int64(int64(sentCmd.Seq)))
 						wantAttrs = append(wantAttrs, semconv.CmdStreamCommandSizeKey.Int64(int64(sentCmd.Size)))
 
-						asserterror.EqualDeep(attrs, wantAttrs, t)
+						asserterror.EqualDeep(t, attrs, wantAttrs)
 					},
 				).RegisterSetStatus(
 					func(code codes.Code, description string) {
-						asserterror.Equal(code, codes.Error, t)
-						asserterror.Equal(description, err.Error(), t)
+						asserterror.Equal(t, code, codes.Error)
+						asserterror.Equal(t, description, err.Error())
 					},
 				).RegisterEnd(
 					func(options ...trace.SpanEndOption) {},
@@ -546,7 +548,7 @@ func TestSendHooks(t *testing.T) {
 					Port: 8080,
 				}
 
-				cmd     = cmocks.NewCmd()
+				cmd     = cmock.NewCmd()
 				sentCmd = hooks.SentCmd[any]{
 					Seq:  CmdSeq,
 					Size: CmdSize,
@@ -561,7 +563,7 @@ func TestSendHooks(t *testing.T) {
 				addCmdMetricAttrs = []attribute.KeyValue{
 					{Key: "cmdmetric", Value: attribute.StringValue("cmdmetric_value")},
 				}
-				want = newWantVals(wantAddr, wantSpanName, cmd, cmocks.NewResult(),
+				want = newWantVals(wantAddr, wantSpanName, cmd, cmock.NewResult(),
 					semconv.Timeout,
 					[]trace.SpanStartOption{trace.WithTimestamp(wantTimestamp)},
 					addSpanAttrs,
@@ -574,19 +576,19 @@ func TestSendHooks(t *testing.T) {
 					WithSpanStartOption[any](trace.WithTimestamp(wantTimestamp)),
 					WithSpanAttributesFn(
 						func(remoteAddr net.Addr, sentCmd hooks.SentCmd[any]) []attribute.KeyValue {
-							asserterror.Equal(remoteAddr, net.Addr(wantAddr), t)
-							asserterror.Equal(sentCmd.Seq, CmdSeq, t)
-							asserterror.Equal(sentCmd.Size, CmdSize, t)
-							asserterror.Equal(sentCmd.Cmd, core.Cmd[any](cmd), t)
+							asserterror.Equal(t, remoteAddr, net.Addr(wantAddr))
+							asserterror.Equal(t, sentCmd.Seq, CmdSeq)
+							asserterror.Equal(t, sentCmd.Size, CmdSize)
+							asserterror.Equal(t, sentCmd.Cmd, core.Cmd[any](cmd))
 							return addSpanAttrs
 						},
 					),
 					WithCmdMetricAttributesFn(
 						func(sentCmd hooks.SentCmd[any], status semconv.CmdStreamCommandStatus, elapsedTime float64) []attribute.KeyValue {
-							asserterror.Equal(sentCmd.Seq, CmdSeq, t)
-							asserterror.Equal(sentCmd.Size, CmdSize, t)
-							asserterror.Equal(sentCmd.Cmd, core.Cmd[any](cmd), t)
-							asserterror.Equal(status, semconv.Timeout, t)
+							asserterror.Equal(t, sentCmd.Seq, CmdSeq)
+							asserterror.Equal(t, sentCmd.Size, CmdSize)
+							asserterror.Equal(t, sentCmd.Cmd, core.Cmd[any](cmd))
+							asserterror.Equal(t, status, semconv.Timeout)
 							// asserterror.Equal(elapsedTime, wantElapsedTime, t)
 							return addCmdMetricAttrs
 						},
@@ -598,7 +600,7 @@ func TestSendHooks(t *testing.T) {
 				span          = mock.NewSpan().RegisterSetAttributes(
 					func(attrs ...attribute.KeyValue) {
 						wantAttrs := []attribute.KeyValue{otel_semconv.ErrorTypeKey.String(internal_semconv.TypeStr(err))}
-						asserterror.EqualDeep(attrs, wantAttrs, t)
+						asserterror.EqualDeep(t, attrs, wantAttrs)
 					},
 				).RegisterSetAttributes(
 					func(attrs ...attribute.KeyValue) {
@@ -607,12 +609,12 @@ func TestSendHooks(t *testing.T) {
 						wantAttrs = append(wantAttrs, semconv.CmdStreamCommandSeqKey.Int64(int64(sentCmd.Seq)))
 						wantAttrs = append(wantAttrs, semconv.CmdStreamCommandSizeKey.Int64(int64(sentCmd.Size)))
 
-						asserterror.EqualDeep(attrs, wantAttrs, t)
+						asserterror.EqualDeep(t, attrs, wantAttrs)
 					},
 				).RegisterSetStatus(
 					func(code codes.Code, description string) {
-						asserterror.Equal(code, codes.Error, t)
-						asserterror.Equal(description, err.Error(), t)
+						asserterror.Equal(t, code, codes.Error)
+						asserterror.Equal(t, description, err.Error())
 					},
 				).RegisterEnd(
 					func(options ...trace.SpanEndOption) {},
@@ -637,12 +639,12 @@ func testOnError(addAttrs []attribute.KeyValue, t *testing.T) {
 		sentCmd       = hooks.SentCmd[any]{
 			Seq:  10,
 			Size: 100,
-			Cmd:  cmocks.NewCmd(),
+			Cmd:  cmock.NewCmd(),
 		}
 		span = mock.NewSpan().RegisterSetAttributes(
 			func(attrs ...attribute.KeyValue) {
 				kv := otel_semconv.ErrorTypeKey.String(internal_semconv.TypeStr(err))
-				asserterror.EqualDeep([]attribute.KeyValue{kv}, attrs, t)
+				asserterror.EqualDeep(t, []attribute.KeyValue{kv}, attrs)
 			},
 		).RegisterSetAttributes(
 			func(attrs ...attribute.KeyValue) {
@@ -654,12 +656,12 @@ func testOnError(addAttrs []attribute.KeyValue, t *testing.T) {
 				wantAttrs = append(wantAttrs, semconv.CmdStreamCommandSeqKey.Int64(int64(sentCmd.Seq)))
 				wantAttrs = append(wantAttrs, semconv.CmdStreamCommandSizeKey.Int64(int64(sentCmd.Size)))
 
-				asserterror.EqualDeep(attrs, wantAttrs, t)
+				asserterror.EqualDeep(t, attrs, wantAttrs)
 			},
 		).RegisterSetStatus(
 			func(code codes.Code, description string) {
-				asserterror.Equal(code, codes.Error, t)
-				asserterror.Equal(description, err.Error(), t)
+				asserterror.Equal(t, code, codes.Error)
+				asserterror.Equal(t, description, err.Error())
 			},
 		).RegisterEnd(
 			func(options ...trace.SpanEndOption) {},
@@ -686,16 +688,16 @@ func testOnResult(ctxWithSpan context.Context, sentCmd hooks.SentCmd[any],
 	ops []SetOption[any],
 	t *testing.T,
 ) {
-	mocks := []*mok.Mock{sentCmd.Cmd.(cmocks.Cmd).Mock, meterProvider.Mock, span.Mock}
+	mocks := []*mok.Mock{sentCmd.Cmd.(cmock.Cmd).Mock, meterProvider.Mock, span.Mock}
 	if recvResult.Result != nil {
-		mocks = append(mocks, recvResult.Result.(cmocks.Result).Mock)
+		mocks = append(mocks, recvResult.Result.(cmock.Result).Mock)
 	}
 	hooks := NewHooksFactory[any](ops...).New()
 	hooks.(*Hooks[any]).span = span
 
 	hooks.OnResult(ctxWithSpan, sentCmd, recvResult, err)
 
-	asserterror.EqualDeep(mok.CheckCalls(mocks), mok.EmptyInfomap, t)
+	asserterror.EqualDeep(t, mok.CheckCalls(mocks), mok.EmptyInfomap)
 }
 
 func testOnTimeout(ctxWithSpan context.Context, sentCmd hooks.SentCmd[any],
@@ -705,13 +707,13 @@ func testOnTimeout(ctxWithSpan context.Context, sentCmd hooks.SentCmd[any],
 	ops []SetOption[any],
 	t *testing.T,
 ) {
-	mocks := []*mok.Mock{sentCmd.Cmd.(cmocks.Cmd).Mock, meterProvider.Mock, span.Mock}
+	mocks := []*mok.Mock{sentCmd.Cmd.(cmock.Cmd).Mock, meterProvider.Mock, span.Mock}
 	hooks := NewHooksFactory[any](ops...).New()
 	hooks.(*Hooks[any]).span = span
 
 	hooks.OnTimeout(ctxWithSpan, sentCmd, err)
 
-	asserterror.EqualDeep(mok.CheckCalls(mocks), mok.EmptyInfomap, t)
+	asserterror.EqualDeep(t, mok.CheckCalls(mocks), mok.EmptyInfomap)
 }
 
 func mockClientMeterProvider(meterProvider mock.MeterProvider, t *testing.T) (
@@ -742,7 +744,7 @@ func clientMeterFns(t *testing.T) (vars metricVars, fn1 mock.Int64CounterFn,
 ) {
 	vars.cmdInt64Counter = mock.NewInt64Counter()
 	fn1 = func(name string, options ...metric.Int64CounterOption) (c metric.Int64Counter, err error) {
-		asserterror.Equal(name, semconv.CmdStreamClientCommandCountName, t)
+		asserterror.Equal(t, name, semconv.CmdStreamClientCommandCountName)
 		var (
 			wantConf = metric.NewInt64CounterConfig(
 				metric.WithUnit(semconv.CmdStreamClientCommandCountUnit),
@@ -750,13 +752,13 @@ func clientMeterFns(t *testing.T) (vars metricVars, fn1 mock.Int64CounterFn,
 			)
 			conf = metric.NewInt64CounterConfig(options...)
 		)
-		asserterror.EqualDeep(conf, wantConf, t)
+		asserterror.EqualDeep(t, conf, wantConf)
 		return vars.cmdInt64Counter, nil
 	}
 
 	vars.cmdInt64Histogram = mock.NewInt64Histogram()
 	fn2 = func(name string, options ...metric.Int64HistogramOption) (h metric.Int64Histogram, err error) {
-		asserterror.Equal(name, semconv.CmdStreamClientCommandSizeName, t)
+		asserterror.Equal(t, name, semconv.CmdStreamClientCommandSizeName)
 		var (
 			wantConf = metric.NewInt64HistogramConfig(
 				metric.WithUnit(semconv.CmdStreamClientCommandSizeUnit),
@@ -764,13 +766,13 @@ func clientMeterFns(t *testing.T) (vars metricVars, fn1 mock.Int64CounterFn,
 			)
 			conf = metric.NewInt64HistogramConfig(options...)
 		)
-		asserterror.EqualDeep(conf, wantConf, t)
+		asserterror.EqualDeep(t, conf, wantConf)
 		return vars.cmdInt64Histogram, nil
 	}
 
 	vars.cmdFloat64Histogram = mock.NewFloat64Histogram()
 	fn3 = func(name string, options ...metric.Float64HistogramOption) (metric.Float64Histogram, error) {
-		asserterror.Equal(name, semconv.CmdStreamClientCommandDurationName, t)
+		asserterror.Equal(t, name, semconv.CmdStreamClientCommandDurationName)
 		var (
 			wantConf = metric.NewFloat64HistogramConfig(
 				metric.WithUnit(semconv.CmdStreamClientCommandDurationUnit),
@@ -778,13 +780,13 @@ func clientMeterFns(t *testing.T) (vars metricVars, fn1 mock.Int64CounterFn,
 			)
 			conf = metric.NewFloat64HistogramConfig(options...)
 		)
-		asserterror.EqualDeep(conf, wantConf, t)
+		asserterror.EqualDeep(t, conf, wantConf)
 		return vars.cmdFloat64Histogram, nil
 	}
 
 	vars.resultInt64Counter = mock.NewInt64Counter()
 	fn4 = func(name string, options ...metric.Int64CounterOption) (c metric.Int64Counter, err error) {
-		asserterror.Equal(name, semconv.CmdStreamClientResultCountName, t)
+		asserterror.Equal(t, name, semconv.CmdStreamClientResultCountName)
 		var (
 			wantConf = metric.NewInt64CounterConfig(
 				metric.WithUnit(semconv.CmdStreamClientResultCountUnit),
@@ -792,13 +794,13 @@ func clientMeterFns(t *testing.T) (vars metricVars, fn1 mock.Int64CounterFn,
 			)
 			conf = metric.NewInt64CounterConfig(options...)
 		)
-		asserterror.EqualDeep(conf, wantConf, t)
+		asserterror.EqualDeep(t, conf, wantConf)
 		return vars.resultInt64Counter, nil
 	}
 
 	vars.resultInt64Histogram = mock.NewInt64Histogram()
 	fn5 = func(name string, options ...metric.Int64HistogramOption) (h metric.Int64Histogram, err error) {
-		asserterror.Equal(name, semconv.CmdStreamClientResultSizeName, t)
+		asserterror.Equal(t, name, semconv.CmdStreamClientResultSizeName)
 		var (
 			wantConf = metric.NewInt64HistogramConfig(
 				metric.WithUnit(semconv.CmdStreamClientResultSizeUnit),
@@ -806,13 +808,13 @@ func clientMeterFns(t *testing.T) (vars metricVars, fn1 mock.Int64CounterFn,
 			)
 			conf = metric.NewInt64HistogramConfig(options...)
 		)
-		asserterror.EqualDeep(conf, wantConf, t)
+		asserterror.EqualDeep(t, conf, wantConf)
 		return vars.resultInt64Histogram, nil
 	}
 
 	vars.resultFloat64Histogram = mock.NewFloat64Histogram()
 	fn6 = func(name string, options ...metric.Float64HistogramOption) (metric.Float64Histogram, error) {
-		asserterror.Equal(name, semconv.CmdStreamClientResultDurationName, t)
+		asserterror.Equal(t, name, semconv.CmdStreamClientResultDurationName)
 		var (
 			wantConf = metric.NewFloat64HistogramConfig(
 				metric.WithUnit(semconv.CmdStreamClientResultDurationUnit),
@@ -820,7 +822,7 @@ func clientMeterFns(t *testing.T) (vars metricVars, fn1 mock.Int64CounterFn,
 			)
 			conf = metric.NewFloat64HistogramConfig(options...)
 		)
-		asserterror.EqualDeep(conf, wantConf, t)
+		asserterror.EqualDeep(t, conf, wantConf)
 		return vars.resultFloat64Histogram, nil
 	}
 	return
