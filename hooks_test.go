@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cmd-stream/core-go"
-	cmock "github.com/cmd-stream/core-go/test/mock"
+	"github.com/cmd-stream/cmd-stream-go/core"
+	"github.com/cmd-stream/cmd-stream-go/sender/hooks"
+	cmock "github.com/cmd-stream/cmd-stream-go/test/mock/core"
 	internal_semconv "github.com/cmd-stream/otelcmd-stream-go/internal/semconv"
 	semconv "github.com/cmd-stream/otelcmd-stream-go/semconv"
 	"github.com/cmd-stream/otelcmd-stream-go/test/mock"
-	"github.com/cmd-stream/sender-go/hooks"
 	asserterror "github.com/ymz-ncnk/assert/error"
 	"github.com/ymz-ncnk/mok"
 	"go.opentelemetry.io/otel"
@@ -35,7 +35,7 @@ func TestSendHooks(t *testing.T) {
 
 			var (
 				wantErr  error = nil
-				cmd            = cmock.NewCmd()
+				cmd            = cmock.NewCmd[any]()
 				traceCmd       = NewTraceCmd(cmd)
 
 				spanStartOptions = []trace.SpanStartOption{
@@ -80,7 +80,7 @@ func TestSendHooks(t *testing.T) {
 
 			var (
 				wantErr          error = nil
-				cmd                    = cmock.NewCmd()
+				cmd                    = cmock.NewCmd[any]()
 				spanStartOptions       = []trace.SpanStartOption{
 					trace.WithSpanKind(trace.SpanKindClient),
 				}
@@ -113,7 +113,7 @@ func TestSendHooks(t *testing.T) {
 
 				var (
 					wantErr          error = nil
-					cmd                    = cmock.NewCmd()
+					cmd                    = cmock.NewCmd[any]()
 					traceCmd               = NewTraceCmd(cmd)
 					spanStartOptions       = []trace.SpanStartOption{
 						trace.WithSpanKind(trace.SpanKindClient),
@@ -152,7 +152,7 @@ func TestSendHooks(t *testing.T) {
 
 			var (
 				wantErr error = nil
-				cmd           = cmock.NewCmd()
+				cmd           = cmock.NewCmd[any]()
 				// 00-8e4e4fc7a0b349d2b2039ab9c1e2a5f7-5d3f9a81cd8731be-01
 				sc = trace.NewSpanContext(trace.SpanContextConfig{
 					TraceID:    [16]byte([]byte("8e4e4fc7a0b349d2b2039ab9c1e2a5f7")),
@@ -200,7 +200,7 @@ func TestSendHooks(t *testing.T) {
 
 				meterProvider = mock.NewMeterProvider()
 
-				cmd     = cmock.NewCmd()
+				cmd     = cmock.NewCmd[any]()
 				sentCmd = hooks.SentCmd[any]{
 					Seq:  CmdSeq,
 					Size: CmdSize,
@@ -255,7 +255,7 @@ func TestSendHooks(t *testing.T) {
 					Port: 8080,
 				}
 
-				cmd     = cmock.NewCmd()
+				cmd     = cmock.NewCmd[any]()
 				sentCmd = hooks.SentCmd[any]{
 					Seq:  CmdSeq,
 					Size: CmdSize,
@@ -309,7 +309,7 @@ func TestSendHooks(t *testing.T) {
 					Port: 8080,
 				}
 
-				cmd     = cmock.NewCmd()
+				cmd     = cmock.NewCmd[any]()
 				sentCmd = hooks.SentCmd[any]{
 					Seq:  CmdSeq,
 					Size: CmdSize,
@@ -368,7 +368,7 @@ func TestSendHooks(t *testing.T) {
 					Port: 8080,
 				}
 
-				cmd     = cmock.NewCmd()
+				cmd     = cmock.NewCmd[any]()
 				sentCmd = hooks.SentCmd[any]{
 					Seq:  CmdSeq,
 					Size: CmdSize,
@@ -490,7 +490,7 @@ func TestSendHooks(t *testing.T) {
 					Port: 8080,
 				}
 
-				cmd     = cmock.NewCmd()
+				cmd     = cmock.NewCmd[any]()
 				sentCmd = hooks.SentCmd[any]{
 					Seq:  CmdSeq,
 					Size: CmdSize,
@@ -548,7 +548,7 @@ func TestSendHooks(t *testing.T) {
 					Port: 8080,
 				}
 
-				cmd     = cmock.NewCmd()
+				cmd     = cmock.NewCmd[any]()
 				sentCmd = hooks.SentCmd[any]{
 					Seq:  CmdSeq,
 					Size: CmdSize,
@@ -639,7 +639,7 @@ func testOnError(addAttrs []attribute.KeyValue, t *testing.T) {
 		sentCmd       = hooks.SentCmd[any]{
 			Seq:  10,
 			Size: 100,
-			Cmd:  cmock.NewCmd(),
+			Cmd:  cmock.NewCmd[any](),
 		}
 		span = mock.NewSpan().RegisterSetAttributes(
 			func(attrs ...attribute.KeyValue) {
@@ -688,11 +688,11 @@ func testOnResult(ctxWithSpan context.Context, sentCmd hooks.SentCmd[any],
 	ops []SetOption[any],
 	t *testing.T,
 ) {
-	mocks := []*mok.Mock{sentCmd.Cmd.(cmock.Cmd).Mock, meterProvider.Mock, span.Mock}
+	mocks := []*mok.Mock{sentCmd.Cmd.(cmock.Cmd[any]).Mock, meterProvider.Mock, span.Mock}
 	if recvResult.Result != nil {
 		mocks = append(mocks, recvResult.Result.(cmock.Result).Mock)
 	}
-	hooks := NewHooksFactory[any](ops...).New()
+	hooks := NewHooksFactory(ops...).New()
 	hooks.(*Hooks[any]).span = span
 
 	hooks.OnResult(ctxWithSpan, sentCmd, recvResult, err)
@@ -707,7 +707,7 @@ func testOnTimeout(ctxWithSpan context.Context, sentCmd hooks.SentCmd[any],
 	ops []SetOption[any],
 	t *testing.T,
 ) {
-	mocks := []*mok.Mock{sentCmd.Cmd.(cmock.Cmd).Mock, meterProvider.Mock, span.Mock}
+	mocks := []*mok.Mock{sentCmd.Cmd.(cmock.Cmd[any]).Mock, meterProvider.Mock, span.Mock}
 	hooks := NewHooksFactory[any](ops...).New()
 	hooks.(*Hooks[any]).span = span
 

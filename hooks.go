@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/cmd-stream/core-go"
+	"github.com/cmd-stream/cmd-stream-go/core"
+	"github.com/cmd-stream/cmd-stream-go/sender/hooks"
 	internal_semconv "github.com/cmd-stream/otelcmd-stream-go/internal/semconv"
 	"github.com/cmd-stream/otelcmd-stream-go/semconv"
-	"github.com/cmd-stream/sender-go/hooks"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"

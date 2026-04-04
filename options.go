@@ -3,10 +3,10 @@ package otelcmd
 import (
 	"net"
 
-	"github.com/cmd-stream/core-go"
+	"github.com/cmd-stream/cmd-stream-go/core"
 	internal_semconv "github.com/cmd-stream/otelcmd-stream-go/internal/semconv"
 	"github.com/cmd-stream/otelcmd-stream-go/semconv"
-	"github.com/cmd-stream/sender-go/hooks"
+	"github.com/cmd-stream/cmd-stream-go/sender/hooks"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"

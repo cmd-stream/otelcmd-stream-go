@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/cmd-stream/core-go"
+	"github.com/cmd-stream/cmd-stream-go/core"
 	"github.com/cmd-stream/otelcmd-stream-go/internal/semconv"
 )
 

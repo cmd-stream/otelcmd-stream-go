@@ -4,8 +4,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/cmd-stream/core-go"
-	"github.com/cmd-stream/sender-go/hooks"
+	"github.com/cmd-stream/cmd-stream-go/core"
+	"github.com/cmd-stream/cmd-stream-go/sender/hooks"
 )
 
 type ProxyCallbackFn func(recvResult hooks.ReceivedResult)
@@ -38,9 +38,10 @@ func (p *Proxy[T]) Send(seq core.Seq, result core.Result) (n int, err error) {
 	return
 }
 
-func (p *Proxy[T]) SendWithDeadline(seq core.Seq, result core.Result,
-	deadline time.Time) (n int, err error) {
-	n, err = p.proxy.SendWithDeadline(seq, result, deadline)
+func (p *Proxy[T]) SendWithDeadline(deadline time.Time, seq core.Seq,
+	result core.Result,
+) (n int, err error) {
+	n, err = p.proxy.SendWithDeadline(deadline, seq, result)
 	if err != nil {
 		return
 	}

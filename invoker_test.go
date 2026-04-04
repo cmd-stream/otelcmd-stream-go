@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cmd-stream/core-go"
-	cmock "github.com/cmd-stream/core-go/test/mock"
-	hmock "github.com/cmd-stream/handler-go/test/mock"
+	"github.com/cmd-stream/cmd-stream-go/core"
+	"github.com/cmd-stream/cmd-stream-go/sender/hooks"
+	cmock "github.com/cmd-stream/cmd-stream-go/test/mock/core"
+	hmock "github.com/cmd-stream/cmd-stream-go/test/mock/handler"
 	internal_semconv "github.com/cmd-stream/otelcmd-stream-go/internal/semconv"
 	"github.com/cmd-stream/otelcmd-stream-go/semconv"
 	"github.com/cmd-stream/otelcmd-stream-go/test/mock"
-	"github.com/cmd-stream/sender-go/hooks"
 	asserterror "github.com/ymz-ncnk/assert/error"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -60,7 +60,7 @@ func TestInvoker(t *testing.T) {
 				propagation.Baggage{},
 			)
 			result = cmock.NewResult()
-			cmd    = cmock.NewCmd().RegisterExec(
+			cmd    = cmock.NewCmd[any]().RegisterExec(
 				func(ctx context.Context, seq core.Seq, at time.Time, receiver any,
 					proxy core.Proxy,
 				) (err error) {
@@ -100,7 +100,7 @@ func TestInvoker(t *testing.T) {
 				propagation.Baggage{},
 			)
 			result = cmock.NewResult()
-			cmd    = cmock.NewCmd().RegisterExec(
+			cmd    = cmock.NewCmd[any]().RegisterExec(
 				func(ctx context.Context, seq core.Seq, at time.Time, receiver any,
 					proxy core.Proxy,
 				) (err error) {
@@ -138,7 +138,7 @@ func TestInvoker(t *testing.T) {
 				meterProvider  = mock.NewMeterProvider()
 				tracerProvider = mock.NewTracerProvider()
 				result         = cmock.NewResult()
-				cmd            = cmock.NewCmd().RegisterExec(
+				cmd            = cmock.NewCmd[any]().RegisterExec(
 					func(ctx context.Context, seq core.Seq, at time.Time, receiver any,
 						proxy core.Proxy,
 					) (err error) {
@@ -178,7 +178,7 @@ func TestInvoker(t *testing.T) {
 					propagation.Baggage{},
 				)
 				result = cmock.NewResult()
-				cmd    = cmock.NewCmd().RegisterExec(
+				cmd    = cmock.NewCmd[any]().RegisterExec(
 					func(ctx context.Context, seq core.Seq, at time.Time, receiver any,
 						proxy core.Proxy,
 					) (err error) {
