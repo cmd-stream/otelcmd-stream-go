@@ -2,5 +2,5 @@ package otelcmd
 
 // Version is the current release version of the otelcmd-stream instrumentation.
 func Version() string {
-	return "0.1.0"
+	return "0.2.1"
 }

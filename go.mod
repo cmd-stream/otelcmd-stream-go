@@ -8,7 +8,7 @@ require (
 )
 
 require (
-	github.com/cmd-stream/cmd-stream-go v0.5.1
+	github.com/cmd-stream/cmd-stream-go v0.5.2
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/mus-format/common-go v0.0.0-20260324174526-3d8f1741b5a2 // indirect
