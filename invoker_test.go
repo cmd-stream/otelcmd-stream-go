@@ -8,8 +8,7 @@ import (
 
 	"github.com/cmd-stream/cmd-stream-go/core"
 	"github.com/cmd-stream/cmd-stream-go/sender/hooks"
-	cmock "github.com/cmd-stream/cmd-stream-go/test/mock/core"
-	hmock "github.com/cmd-stream/cmd-stream-go/test/mock/handler"
+	cmock "github.com/cmd-stream/cmd-stream-go/test/mock"
 	internal_semconv "github.com/cmd-stream/otelcmd-stream-go/internal/semconv"
 	"github.com/cmd-stream/otelcmd-stream-go/semconv"
 	"github.com/cmd-stream/otelcmd-stream-go/test/mock"
@@ -288,7 +287,7 @@ func testInvoke(want wantVals,
 
 	// 4. Invoke cmd with wrapped Proxy.
 	var (
-		invoker = hmock.NewInvoker[any]()
+		invoker = cmock.NewInvoker[any]()
 		proxy   = mockInvoker(invoker, want.addr, cmd, t)
 	)
 
@@ -388,7 +387,7 @@ func mockSpanAttributes(span mock.Span, _ *net.TCPAddr,
 	)
 }
 
-func mockInvoker(invoker hmock.Invoker[any], wantAddr *net.TCPAddr,
+func mockInvoker(invoker cmock.Invoker[any], wantAddr *net.TCPAddr,
 	wantCmd core.Cmd[any], t *testing.T,
 ) (proxy cmock.Proxy) {
 	proxy = cmock.NewProxy().RegisterRemoteAddr(

@@ -9,7 +9,7 @@ import (
 
 	"github.com/cmd-stream/cmd-stream-go/core"
 	"github.com/cmd-stream/cmd-stream-go/sender/hooks"
-	cmock "github.com/cmd-stream/cmd-stream-go/test/mock/core"
+	cmock "github.com/cmd-stream/cmd-stream-go/test/mock"
 	internal_semconv "github.com/cmd-stream/otelcmd-stream-go/internal/semconv"
 	semconv "github.com/cmd-stream/otelcmd-stream-go/semconv"
 	"github.com/cmd-stream/otelcmd-stream-go/test/mock"
