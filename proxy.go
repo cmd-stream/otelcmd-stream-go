@@ -28,8 +28,16 @@ func (p *Proxy[T]) RemoteAddr() net.Addr {
 	return p.proxy.RemoteAddr()
 }
 
-func (p *Proxy[T]) Send(seq core.Seq, result core.Result) (n int, err error) {
-	n, err = p.proxy.Send(seq, result)
+func (p *Proxy[T]) At() time.Time {
+	return p.proxy.At()
+}
+
+func (p *Proxy[T]) Seq() core.Seq {
+	return p.proxy.Seq()
+}
+
+func (p *Proxy[T]) Send(result core.Result) (n int, err error) {
+	n, err = p.proxy.Send(result)
 	if err != nil {
 		return
 	}
@@ -38,10 +46,10 @@ func (p *Proxy[T]) Send(seq core.Seq, result core.Result) (n int, err error) {
 	return
 }
 
-func (p *Proxy[T]) SendWithDeadline(deadline time.Time, seq core.Seq,
-	result core.Result,
-) (n int, err error) {
-	n, err = p.proxy.SendWithDeadline(deadline, seq, result)
+func (p *Proxy[T]) SendWithDeadline(deadline time.Time, result core.Result) (
+	n int, err error,
+) {
+	n, err = p.proxy.SendWithDeadline(deadline, result)
 	if err != nil {
 		return
 	}

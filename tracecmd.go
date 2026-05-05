@@ -2,7 +2,6 @@ package otelcmd
 
 import (
 	"context"
-	"time"
 
 	"github.com/cmd-stream/cmd-stream-go/core"
 	"github.com/cmd-stream/otelcmd-stream-go/internal/semconv"
@@ -28,9 +27,8 @@ type TraceCmd[T any, V core.Cmd[T]] struct {
 	Cmd        V
 }
 
-func (c TraceCmd[T, V]) Exec(ctx context.Context, seq core.Seq, at time.Time,
-	receiver T, proxy core.Proxy) error {
-	return c.Cmd.Exec(ctx, seq, at, receiver, proxy)
+func (c TraceCmd[T, V]) Exec(ctx context.Context, receiver T, proxy core.Proxy) error {
+	return c.Cmd.Exec(ctx, receiver, proxy)
 }
 
 func (c TraceCmd[T, V]) TypeStr() string {

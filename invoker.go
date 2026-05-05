@@ -46,8 +46,8 @@ type Invoker[T any] struct {
 	options Options[T]
 }
 
-func (i Invoker[T]) Invoke(ctx context.Context, seq core.Seq, at time.Time,
-	bytesRead int, cmd core.Cmd[T], proxy core.Proxy) (err error) {
+func (i Invoker[T]) Invoke(ctx context.Context, bytesRead int, cmd core.Cmd[T],
+	proxy core.Proxy) (err error) {
 	startTime := time.Now()
 
 	if tcmd, ok := cmd.(traceCmd[T]); ok {
@@ -60,7 +60,7 @@ func (i Invoker[T]) Invoke(ctx context.Context, seq core.Seq, at time.Time,
 	// }
 	ctx, span := i.options.Tracer.Start(ctx, i.options.SpanNameFormatter(cmd),
 		i.options.SpanStartOptions...)
-	sentCmd := hooks.SentCmd[T]{Seq: seq, Size: bytesRead, Cmd: cmd}
+	sentCmd := hooks.SentCmd[T]{Seq: proxy.Seq(), Size: bytesRead, Cmd: cmd}
 	i.setSpanAttributes(span, proxy.RemoteAddr(), sentCmd)
 
 	var (
@@ -70,7 +70,7 @@ func (i Invoker[T]) Invoke(ctx context.Context, seq core.Seq, at time.Time,
 		}
 		proxyWrap = NewProxy[T](proxy, callback)
 	)
-	err = i.invoker.Invoke(ctx, seq, at, bytesRead, cmd, proxyWrap)
+	err = i.invoker.Invoke(ctx, bytesRead, cmd, proxyWrap)
 
 	status := semconv.Ok
 	if err != nil {

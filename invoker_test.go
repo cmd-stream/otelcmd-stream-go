@@ -60,10 +60,8 @@ func TestInvoker(t *testing.T) {
 			)
 			result = cmock.NewResult()
 			cmd    = cmock.NewCmd[any]().RegisterExec(
-				func(ctx context.Context, seq core.Seq, at time.Time, receiver any,
-					proxy core.Proxy,
-				) (err error) {
-					_, err = proxy.Send(0, result)
+				func(ctx context.Context, receiver any, proxy core.Proxy) (err error) {
+					_, err = proxy.Send(result)
 					return
 				},
 			)
@@ -100,10 +98,8 @@ func TestInvoker(t *testing.T) {
 			)
 			result = cmock.NewResult()
 			cmd    = cmock.NewCmd[any]().RegisterExec(
-				func(ctx context.Context, seq core.Seq, at time.Time, receiver any,
-					proxy core.Proxy,
-				) (err error) {
-					_, err = proxy.Send(0, result)
+				func(ctx context.Context, receiver any, proxy core.Proxy) (err error) {
+					_, err = proxy.Send(result)
 					return
 				},
 			)
@@ -138,10 +134,8 @@ func TestInvoker(t *testing.T) {
 				tracerProvider = mock.NewTracerProvider()
 				result         = cmock.NewResult()
 				cmd            = cmock.NewCmd[any]().RegisterExec(
-					func(ctx context.Context, seq core.Seq, at time.Time, receiver any,
-						proxy core.Proxy,
-					) (err error) {
-						_, err = proxy.Send(0, result)
+					func(ctx context.Context, receiver any, proxy core.Proxy) (err error) {
+						_, err = proxy.Send(result)
 						return
 					},
 				)
@@ -178,10 +172,8 @@ func TestInvoker(t *testing.T) {
 				)
 				result = cmock.NewResult()
 				cmd    = cmock.NewCmd[any]().RegisterExec(
-					func(ctx context.Context, seq core.Seq, at time.Time, receiver any,
-						proxy core.Proxy,
-					) (err error) {
-						_, err = proxy.Send(0, result)
+					func(ctx context.Context, receiver any, proxy core.Proxy) (err error) {
+						_, err = proxy.Send(result)
 						return
 					},
 				)
@@ -290,6 +282,11 @@ func testInvoke(want wantVals,
 		invoker = cmock.NewInvoker[any]()
 		proxy   = mockInvoker(invoker, want.addr, cmd, t)
 	)
+	proxy.RegisterSeq(
+		func() core.Seq { return CmdSeq },
+	).RegisterAt(
+		func() time.Time { return time.Now() },
+	)
 
 	// 5.1. Proxy should set span result-event attributes.
 	mockSpanEvent(span, result, want.resultEventConfig, t)
@@ -300,8 +297,8 @@ func testInvoke(want wantVals,
 	// 6. End span.
 	span.RegisterEnd(func(options ...trace.SpanEndOption) {})
 
-	err := NewInvoker(invoker, ops...).Invoke(context.Background(), CmdSeq,
-		time.Now(), CmdSize, cmd, proxy)
+	err := NewInvoker(invoker, ops...).Invoke(context.Background(), CmdSize, cmd,
+		proxy)
 	asserterror.EqualError(t, err, nil)
 }
 
@@ -394,16 +391,16 @@ func mockInvoker(invoker cmock.Invoker[any], wantAddr *net.TCPAddr,
 		func() (addr net.Addr) { return wantAddr },
 	)
 	proxy.RegisterSend(
-		func(seq core.Seq, result core.Result) (n int, err error) {
+		func(result core.Result) (n int, err error) {
 			return ResultSize, nil
 		},
 	)
 	invoker.RegisterInvoke(
-		func(ctx context.Context, seq core.Seq, at time.Time, bytesRead int,
-			cmd core.Cmd[any], proxy core.Proxy,
-		) (err error) {
+		func(ctx context.Context, bytesRead int, cmd core.Cmd[any], proxy core.Proxy) (
+			err error,
+		) {
 			asserterror.Equal(t, cmd, wantCmd)
-			return cmd.Exec(ctx, seq, at, struct{}{}, proxy)
+			return cmd.Exec(ctx, struct{}{}, proxy)
 		},
 	)
 	return
