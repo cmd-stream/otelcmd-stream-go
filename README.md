@@ -1,17 +1,30 @@
-# otelcmd-stream-go
+# otelcmd-stream: OpenTelemetry for cmd-stream
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/cmd-stream/otelcmd-stream-go.svg)](https://pkg.go.dev/github.com/cmd-stream/otelcmd-stream-go)
 [![GoReportCard](https://goreportcard.com/badge/cmd-stream/otelcmd-stream-go)](https://goreportcard.com/report/github.com/cmd-stream/otelcmd-stream-go)
 [![codecov](https://codecov.io/gh/cmd-stream/otelcmd-stream-go/graph/badge.svg?token=04UEO65CLJ)](https://codecov.io/gh/cmd-stream/otelcmd-stream-go)
 
-`otelcmd-stream` provides comprehensive OpenTelemetry support for [cmd-stream](https://github.com/cmd-stream/cmd-stream-go), enabling seamless observability for your command-stream based applications.
+## Table of Contents
+
+- [otelcmd-stream: OpenTelemetry for cmd-stream](#otelcmd-stream-opentelemetry-for-cmd-stream)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [Sender](#sender)
+    - [Server Instrumentation](#server-instrumentation)
+    - [Traceable Commands](#traceable-commands)
 
 ## Features
 
-- **Distributed Tracing**: Automatic span creation for command sending and execution.
-- **Metrics**: Built-in reporting for command execution counts, durations, and status.
-- **Context Propagation**: Trace context is automatically carried across the network from sender to server.
-- **Customizable**: Hooks for adding business-specific attributes and events to spans and metrics.
+- Automated Tracing: Automatically creates spans for Command transmission and
+  execution.
+- Built-in Metrics: Reports execution counts, durations, and success/failure
+  statuses out of the box.
+- Context Propagation: Transparently carries trace context across the network 
+  via the `TraceCmd` wrapper.
+- Extensible Hooks: Inject business-specific attributes and events into spans 
+  and metrics.
 
 ## Installation
 
@@ -19,20 +32,15 @@
 go get github.com/cmd-stream/otelcmd-stream-go
 ```
 
-## Table of Contents
+## Usage
 
-- [Getting Started](#getting-started)
-  - [Sender Instrumentation](#sender-instrumentation)
-  - [Server Instrumentation](#server-instrumentation)
-  - [Traceable Commands](#traceable-commands)
+1. Instrument the sender.
+2. Instrument the server.
+3. Use `TraceCmd` for context propagation.
 
-To integrate `otelcmd-stream` into your application, follow these steps:
+### Sender
 
-1. Instrument the **Sender**.
-2. Instrument the **Server**.
-3. Use **Traceable Commands** to propagate span context.
-
-Use `otelcmd.NewHooksFactory` to instrument your sender:
+Instrument the sender with `otelcmd.NewHooksFactory`:
 
 ```go
 import (
@@ -40,7 +48,6 @@ import (
   otelcmd "github.com/cmd-stream/otelcmd-stream-go"
   cmdstream "github.com/cmd-stream/cmd-stream-go"
   sndr "github.com/cmd-stream/cmd-stream-go/sender"
-  grp "github.com/cmd-stream/cmd-stream-go/group"
 )
 
 var (
@@ -59,14 +66,12 @@ var (
 
   // Initialize the high-level sender with instrumentation.
   sender, err = cmdstream.NewSender[T](serverAddr.String(), codec,
-    sndr.WithClientsCount[T](clientsCount),
-    sndr.WithGroup[T](grp.WithReconnect[T]()),
     sndr.WithSender[T](sndr.WithHooksFactory[T](hooksFactory)),
   )
 )
 ```
 
-Or combine it with a circuit breaker:
+You can also use a Circuit Breaker:
 
 ```go
 import (
@@ -78,24 +83,23 @@ import (
 )
 
 var (
-  // Create a circuit breaker.
-  cb = circbrk.New(  
+  // 1. Create a circuit breaker.
+  cb = circbrk.New(
     circbrk.WithWindowSize(...),
     circbrk.WithFailureRate(...),
     circbrk.WithOpenDuration(...),
     circbrk.WithSuccessThreshold(...),
   )
 
-  // Create OpenTelemetry hooks factory.
+  // 2. Create the OTel hooks factory.
   otelHooksFactory = otelcmd.NewHooksFactory[T](
     otelcmd.WithServerAddr[T](serverAddr))
 
-  // Wrap OpenTelemetry hooks factory.
+  // 3. Compose them together.
   hooksFactory = hks.NewCircuitBreakerHooksFactory[T](cb, otelHooksFactory)
 
-  // Create sender.
+  // 4. Initialize the sender with the combined hooks.
   sender, err = cmdstream.NewSender[T](serverAddr.String(), codec,
-    sndr.WithClientsCount[T](clientsCount),
     sndr.WithSender[T](sndr.WithHooksFactory[T](hooksFactory)),
   )
 )
@@ -103,7 +107,7 @@ var (
 
 ### Server Instrumentation
 
-Wrap your existing invoker with `otelcmd.NewInvoker` during the server initialization:
+Wrap your invoker with `otelcmd.NewInvoker`:
 
 ```go
 import (
@@ -113,14 +117,11 @@ import (
 )
 
 var (
-  codec = ...
-  receiver = ...
-
   // Initialize your invoker and wrap it with OpenTelemetry support.
   invoker = otelcmd.NewInvoker[T](
     srv.NewInvoker[T](receiver),
     otelcmd.WithServerAddr[T](serverAddr),
-    // Other available server options:
+    // Other available options:
     // otelcmd.WithPropagator[T](...),
     // otelcmd.WithTracerProvider[T](...),
     // otelcmd.WithMeterProvider[T](...),
@@ -131,13 +132,14 @@ var (
 
 ### Traceable Commands
 
-For each Command type, define a corresponding traceable type to enable trace context propagation:
+`TraceCmd` carries the span context across the network. Define a traceable type 
+which is used to generate the `core.Cmd` serializer:
 
 ```go
 type YourTraceCmd = otelcmd.TraceCmd[YourReceiver, YourCmd]
 ```
 
-Use this type to generate a serializer for the `core.Cmd` interface. To send a `YourCmd` with span context propagation:
+Use `otelcmd.NewTraceCmd` to wrap your Commands:
 
 ```go
 import (
@@ -146,7 +148,7 @@ import (
 
 var (
   ctx = ...
-  cmd = otelcmd.NewTraceCmd[YourReceiver, YourCmd](YourCmd{})
+  cmd YourTraceCmd = otelcmd.NewTraceCmd[YourReceiver, YourCmd](YourCmd{})
 )
 result, err := sender.Send(ctx, cmd)
 ```
